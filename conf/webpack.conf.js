@@ -22,11 +22,10 @@ module.exports = {
         enforce: 'pre'
       },
       {
-        test: /\.(css|scss)$/,
+        test: /\.css$/,
         loaders: [
           'style-loader',
           'css-loader',
-          'sass-loader',
           'postcss-loader'
         ]
       },
@@ -34,8 +33,13 @@ module.exports = {
         test: /\.js$/,
         exclude: /node_modules/,
         loaders: [
-          'react-hot-loader',
-          'babel-loader'
+          'ng-annotate-loader'
+        ]
+      },
+      {
+        test: /\.html$/,
+        loaders: [
+          'html-loader'
         ]
       }
     ]
@@ -47,7 +51,6 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: conf.path.src('index.html')
     }),
-    new webpack.HotModuleReplacementPlugin(),
     new webpack.LoaderOptionsPlugin({
       options: {
         postcss: () => [autoprefixer]
@@ -60,9 +63,5 @@ module.exports = {
     path: path.join(process.cwd(), conf.paths.tmp),
     filename: 'index.js'
   },
-  entry: [
-    'webpack/hot/dev-server',
-    'webpack-hot-middleware/client',
-    `./${conf.path.src('index')}`
-  ]
+  entry: `./${conf.path.src('index')}`
 };

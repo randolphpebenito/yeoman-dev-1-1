@@ -1,49 +1,50 @@
-import React from 'react';
-import TestUtils from 'react-addons-test-utils';
-import Header from './Header';
-import TodoTextInput from './TodoTextInput';
+var angular = require('angular');
+require('angular-mocks');
+var Header = require('./Header');
 
-function setup() {
-  const props = {
-    addTodo: jasmine.createSpy()
+describe('Header component', function () {
+  var todos = [
+    {
+      text: 'Use ngrx/store',
+      completed: false,
+      id: 0
+    }
+  ];
+
+  function MockTodoService() {
+  }
+
+  MockTodoService.prototype.addTodo = function (text, todos) {
+    return [
+      {
+        id: (todos.length === 0) ? 0 : todos[0].id + 1,
+        completed: false,
+        text: text
+      }
+    ].concat(todos);
   };
 
-  const renderer = TestUtils.createRenderer();
-  renderer.render(<Header {...props}/>);
-  const output = renderer.getRenderOutput();
-
-  return {
-    props,
-    output,
-    renderer
-  };
-}
-
-describe('components', () => {
-  describe('Header', () => {
-    it('should render correctly', () => {
-      const {output} = setup();
-
-      expect(output.type).toBe('header');
-      expect(output.props.className).toBe('header');
-
-      const [h1, input] = output.props.children;
-
-      expect(h1.type).toBe('h1');
-      expect(h1.props.children).toBe('todos');
-
-      expect(input.type).toBe(TodoTextInput);
-      expect(input.props.newTodo).toBe(true);
-      expect(input.props.placeholder).toBe('What needs to be done?');
-    });
-
-    it('should call addTodo if length of text is greater than 0', () => {
-      const {output, props} = setup();
-      const input = output.props.children[1];
-      input.props.onSave('');
-      expect(props.addTodo.calls.count()).toBe(0);
-      input.props.onSave('Use Redux');
-      expect(props.addTodo.calls.count()).toBe(1);
-    });
+  beforeEach(function () {
+    angular
+      .module('headerComponent', ['app/components/Header.html'])
+      .service('todoService', MockTodoService)
+      .component('headerComponent', Header);
+    angular.mock.module('headerComponent');
   });
+
+  it('should render correctly', angular.mock.inject(function ($rootScope, $compile) {
+    var element = $compile('<header-component></header-component>')($rootScope);
+    $rootScope.$digest();
+    var header = element.find('h1');
+    expect(header.html().trim()).toEqual('todos');
+  }));
+
+  it('should get the todos binded to the component', angular.mock.inject(function ($rootScope, $compile, $componentController) {
+    var component = $componentController('headerComponent', {}, {todos: todos});
+    spyOn(component, 'handleSave').and.callThrough();
+    expect(component.todos.length).toEqual(1);
+    component.handleSave('New Task');
+    expect(component.handleSave).toHaveBeenCalledWith('New Task');
+    expect(component.todos.length).toEqual(2);
+  }));
 });

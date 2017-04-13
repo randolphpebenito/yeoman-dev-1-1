@@ -1,63 +1,49 @@
-import React, {Component, PropTypes} from 'react';
-import classnames from 'classnames';
-
-class TodoTextInput extends Component {
-  constructor(props, context) {
-    super(props, context);
-    this.state = {
-      text: this.props.text || ''
-    };
-    this.handleBlur = this.handleBlur.bind(this);
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
+module.exports = {
+  template: require('./TodoTextInput.html'),
+  controller: TodoTextInput,
+  bindings: {
+    onSave: '&',
+    placeholder: '@',
+    newTodo: '@',
+    editing: '@',
+    text: '<'
   }
+};
 
-  handleSubmit(e) {
-    const text = e.target.value.trim();
-    if (e.which === 13) {
-      this.props.onSave(text);
-      if (this.props.newTodo) {
-        this.setState({text: ''});
-      }
-    }
-  }
-
-  handleChange(e) {
-    this.setState({text: e.target.value});
-  }
-
-  handleBlur(e) {
-    if (!this.props.newTodo) {
-      this.props.onSave(e.target.value);
-    }
-  }
-
-  render() {
-    return (
-      <input
-        className={
-          classnames({
-            'edit': this.props.editing,
-            'new-todo': this.props.newTodo
-          })}
-        type="text"
-        placeholder={this.props.placeholder}
-        autoFocus="true"
-        value={this.state.text}
-        onBlur={this.handleBlur}
-        onChange={this.handleChange}
-        onKeyDown={this.handleSubmit}
-        />
-    );
+/** @ngInject */
+function TodoTextInput(todoService, $window, $timeout) {
+  this.$timeout = $timeout;
+  this.$window = $window;
+  this.todoService = todoService;
+  this.editing = this.editing || false;
+  this.text = this.text || '';
+  if (this.text.length) {
+    this.focus();
   }
 }
 
-TodoTextInput.propTypes = {
-  onSave: PropTypes.func.isRequired,
-  text: PropTypes.string,
-  placeholder: PropTypes.string,
-  editing: PropTypes.bool,
-  newTodo: PropTypes.bool
-};
+TodoTextInput.prototype = {
+  handleBlur: function () {
+    if (!this.newTodo) {
+      this.onSave({text: this.text});
+    }
+  },
 
-export default TodoTextInput;
+  handleSubmit: function (e) {
+    if (e.keyCode === 13) {
+      this.onSave({text: this.text});
+      if (this.newTodo) {
+        this.text = '';
+      }
+    }
+  },
+
+  focus: function () {
+    this.$timeout(function () {
+      var element = this.$window.document.querySelector('.editing .textInput');
+      if (element) {
+        element.focus();
+      }
+    }, 0);
+  }
+};

@@ -18,7 +18,13 @@ module.exports = {
         test: /\.js$/,
         exclude: /node_modules/,
         loaders: [
-          'babel-loader'
+          'ng-annotate-loader'
+        ]
+      },
+      {
+        test: /\.html$/,
+        loaders: [
+          'html-loader'
         ]
       }
     ]
@@ -29,9 +35,5 @@ module.exports = {
       debug: true
     })
   ],
-  devtool: 'source-map',
-  externals: {
-    'react/lib/ExecutionEnvironment': 'true',
-    'react/lib/ReactContext': 'true'
-  }
+  devtool: 'source-map'
 };

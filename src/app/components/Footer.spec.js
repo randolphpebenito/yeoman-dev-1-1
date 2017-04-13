@@ -1,101 +1,42 @@
-import React from 'react';
-import TestUtils from 'react-addons-test-utils';
-import Footer from './Footer';
-import {SHOW_ALL, SHOW_ACTIVE} from '../constants/TodoFilters';
+var angular = require('angular');
+require('angular-mocks');
+var Footer = require('./Footer');
 
-function setup(propOverrides) {
-  const props = Object.assign({
-    completedCount: 0,
-    activeCount: 0,
-    filter: SHOW_ALL,
-    onClearCompleted: jasmine.createSpy(),
-    onShow: jasmine.createSpy()
-  }, propOverrides);
-
-  const renderer = TestUtils.createRenderer();
-  renderer.render(<Footer {...props}/>);
-  const output = renderer.getRenderOutput();
-
-  return {
-    props,
-    output
-  };
-}
-
-function getTextContent(elem) {
-  const children = Array.isArray(elem.props.children) ?
-    elem.props.children : [elem.props.children];
-
-  return children.reduce((out, child) => {
-    // Children are either elements or text strings
-    return out + (child.props ? getTextContent(child) : child);
-  }, '');
-}
-
-describe('components', () => {
-  describe('Footer', () => {
-    it('should render container', () => {
-      const {output} = setup();
-      expect(output.type).toBe('footer');
-      expect(output.props.className).toBe('footer');
-    });
-
-    it('should display active count when 0', () => {
-      const {output} = setup({activeCount: 0});
-      const [count] = output.props.children;
-      expect(getTextContent(count)).toBe('No items left');
-    });
-
-    it('should display active count when above 0', () => {
-      const {output} = setup({activeCount: 1});
-      const [count] = output.props.children;
-      expect(getTextContent(count)).toBe('1 item left');
-    });
-
-    it('should render filters', () => {
-      const {output} = setup();
-      const [, filters] = output.props.children;
-      expect(filters.type).toBe('ul');
-      expect(filters.props.className).toBe('filters');
-      expect(filters.props.children.length).toBe(3);
-      filters.props.children.forEach((filter, i) => {
-        expect(filter.type).toBe('li');
-        const a = filter.props.children;
-        expect(a.props.className).toBe(i === 0 ? 'selected' : '');
-        expect(a.props.children).toBe({
-          0: 'All',
-          1: 'Active',
-          2: 'Completed'
-        }[i]);
-      });
-    });
-
-    it('should call onShow when a filter is clicked', () => {
-      const {output, props} = setup();
-      const [, filters] = output.props.children;
-      const filterLink = filters.props.children[1].props.children;
-      filterLink.props.onClick({});
-      expect(props.onShow).toHaveBeenCalledWith(SHOW_ACTIVE);
-    });
-
-    it('shouldnt show clear button when no completed todos', () => {
-      const {output} = setup({completedCount: 0});
-      const [, , clear] = output.props.children;
-      expect(clear).toBe(undefined);
-    });
-
-    it('should render clear button when completed todos', () => {
-      const {output} = setup({completedCount: 1});
-      const [, , clear] = output.props.children;
-      expect(clear.type).toBe('button');
-      expect(clear.props.children).toBe('Clear completed');
-    });
-
-    it('should call onClearCompleted on clear button click', () => {
-      const {output, props} = setup({completedCount: 1});
-      const [, , clear] = output.props.children;
-      clear.props.onClick({});
-      expect(props.onClearCompleted).toHaveBeenCalled();
-    });
+describe('Footer component', function () {
+  beforeEach(function () {
+    angular
+      .module('footerComponent', ['app/components/Footer.html'])
+      .component('footerComponent', Footer);
+    angular.mock.module('footerComponent');
   });
+
+  it('should render correctly', angular.mock.inject(function ($rootScope, $compile) {
+    var $scope = $rootScope.$new();
+    $scope.activeCount = 2;
+    var element = $compile('<footer-component active-count="activeCount"></footer-component>')($scope);
+    $scope.$digest();
+    var footer = element.find('strong');
+    expect(footer.html().trim()).toEqual('2');
+  }));
+
+  it('shoud call onClearCompleted', angular.mock.inject(function ($componentController) {
+    var bindings = {
+      onClearCompleted: function () {}
+    };
+    var component = $componentController('footerComponent', {}, bindings);
+    spyOn(component, 'onClearCompleted').and.callThrough();
+    component.handleClear();
+    expect(component.onClearCompleted).toHaveBeenCalled();
+  }));
+
+  it('shoud call onShow', angular.mock.inject(function ($componentController) {
+    var bindings = {
+      onShow: function () {}
+    };
+    var component = $componentController('footerComponent', {}, bindings);
+    spyOn(component, 'onShow').and.callThrough();
+    component.handleChange('show_all');
+    expect(component.onShow).toHaveBeenCalledWith({filter: 'show_all'});
+  }));
 });
+

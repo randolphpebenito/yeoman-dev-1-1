@@ -1,18 +1,25 @@
-import 'babel-polyfill';
+var angular = require('angular');
+require('todomvc-app-css/index.css');
 
-import React from 'react';
-import {render} from 'react-dom';
-import {Provider} from 'react-redux';
-import App from './app/containers/App';
-import configureStore from './app/store/configureStore';
+var todos = require('./app/todos/todos');
+var App = require('./app/containers/App');
+var Header = require('./app/components/Header');
+var MainSection = require('./app/components/MainSection');
+var TodoTextInput = require('./app/components/TodoTextInput');
+var TodoItem = require('./app/components/TodoItem');
+var Footer = require('./app/components/Footer');
+require('angular-ui-router');
+var routesConfig = require('./routes');
 
-import 'todomvc-app-css/index.css';
+import './index.css';
 
-const store = configureStore();
-
-render(
-  <Provider store={store}>
-    <App/>
-  </Provider>,
-  document.getElementById('root')
-);
+angular
+  .module('app', ['ui.router'])
+  .config(routesConfig)
+  .service('todoService', todos.TodoService)
+  .component('app', App)
+  .component('headerComponent', Header)
+  .component('footerComponent', Footer)
+  .component('mainSection', MainSection)
+  .component('todoTextInput', TodoTextInput)
+  .component('todoItem', TodoItem);

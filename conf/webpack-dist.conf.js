@@ -24,17 +24,23 @@ module.exports = {
         enforce: 'pre'
       },
       {
-        test: /\.(css|scss)$/,
+        test: /\.css$/,
         loaders: ExtractTextPlugin.extract({
           fallback: 'style-loader',
-          use: 'css-loader?minimize!sass-loader!postcss-loader'
+          use: 'css-loader?minimize!postcss-loader'
         })
       },
       {
         test: /\.js$/,
         exclude: /node_modules/,
         loaders: [
-          'babel-loader'
+          'ng-annotate-loader'
+        ]
+      },
+      {
+        test: /\.html$/,
+        loaders: [
+          'html-loader'
         ]
       }
     ]
@@ -45,9 +51,6 @@ module.exports = {
     FailPlugin,
     new HtmlWebpackPlugin({
       template: conf.path.src('index.html')
-    }),
-    new webpack.DefinePlugin({
-      'process.env.NODE_ENV': '"production"'
     }),
     new webpack.optimize.UglifyJsPlugin({
       output: {comments: false},

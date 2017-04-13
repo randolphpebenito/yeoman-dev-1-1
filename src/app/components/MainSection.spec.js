@@ -1,130 +1,71 @@
-import React from 'react';
-import TestUtils from 'react-addons-test-utils';
-import MainSection from './MainSection';
-import TodoItem from './TodoItem';
-import Footer from './Footer';
-import {SHOW_ALL, SHOW_COMPLETED} from '../constants/TodoFilters';
+var angular = require('angular');
+require('angular-mocks');
+var MainSection = require('./MainSection');
 
-function setup(propOverrides) {
-  const props = Object.assign({
-    todos: [
-      {
-        text: 'Use Redux',
-        completed: false,
-        id: 0
-      }, {
-        text: 'Run the tests',
-        completed: true,
-        id: 1
-      }
-    ],
-    actions: {
-      editTodo: jasmine.createSpy(),
-      deleteTodo: jasmine.createSpy(),
-      completeTodo: jasmine.createSpy(),
-      completeAll: jasmine.createSpy(),
-      clearCompleted: jasmine.createSpy()
-    }
-  }, propOverrides);
-
-  const renderer = TestUtils.createRenderer();
-  renderer.render(<MainSection {...props}/>);
-  const output = renderer.getRenderOutput();
-
-  return {
-    props,
-    output,
-    renderer
+describe('MainSection component', function () {
+  function MockTodoService() {}
+  MockTodoService.prototype = {
+    addTodo: function () {},
+    editTodo: function () {},
+    deleteTodo: function () {},
+    completeTodo: function () {},
+    completeAll: function () {},
+    clearCompleted: function () {}
   };
-}
 
-describe('components', () => {
-  describe('MainSection', () => {
-    it('should render container', () => {
-      const {output} = setup();
-      expect(output.type).toBe('section');
-      expect(output.props.className).toBe('main');
-    });
+  var component;
 
-    describe('toggle all input', () => {
-      it('should render', () => {
-        const {output} = setup();
-        const [toggle] = output.props.children;
-        expect(toggle.type).toBe('input');
-        expect(toggle.props.type).toBe('checkbox');
-        expect(toggle.props.checked).toBe(false);
-      });
+  beforeEach(function () {
+    angular
+      .module('mainSection', ['app/components/MainSection.html'])
+      .service('todoService', MockTodoService)
+      .component('mainSection', MainSection);
+    angular.mock.module('mainSection');
+  });
 
-      it('should be checked if all todos completed', () => {
-        const {output} = setup({
-          todos: [
-            {
-              text: 'Use Redux',
-              completed: true,
-              id: 0
-            }
-          ]
-        });
-        const [toggle] = output.props.children;
-        expect(toggle.props.checked).toBe(true);
-      });
+  beforeEach(angular.mock.inject(function ($componentController) {
+    component = $componentController('mainSection', {}, {});
+  }));
 
-      it('should call completeAll on change', () => {
-        const {output, props} = setup();
-        const [toggle] = output.props.children;
-        toggle.props.onChange({});
-        expect(props.actions.completeAll).toHaveBeenCalled();
-      });
-    });
+  it('shoud call clearCompleted', function () {
+    spyOn(component.todoService, 'clearCompleted').and.callThrough();
+    component.handleClearCompleted();
+    expect(component.todoService.clearCompleted).toHaveBeenCalled();
+  });
 
-    describe('footer', () => {
-      it('should render', () => {
-        const {output} = setup();
-        const [, , footer] = output.props.children;
-        expect(footer.type).toBe(Footer);
-        expect(footer.props.completedCount).toBe(1);
-        expect(footer.props.activeCount).toBe(1);
-        expect(footer.props.filter).toBe(SHOW_ALL);
-      });
+  it('shoud call completeAll', function () {
+    spyOn(component.todoService, 'completeAll').and.callThrough();
+    component.handleCompleteAll();
+    expect(component.todoService.completeAll).toHaveBeenCalled();
+  });
 
-      it('onShow should set the filter', () => {
-        const {output, renderer} = setup();
-        const [, , footer] = output.props.children;
-        footer.props.onShow(SHOW_COMPLETED);
-        const updated = renderer.getRenderOutput();
-        const [, , updatedFooter] = updated.props.children;
-        expect(updatedFooter.props.filter).toBe(SHOW_COMPLETED);
-      });
+  it('shoud set selectedFilter', function () {
+    component.handleShow('show_completed');
+    expect(component.selectedFilter.type).toEqual('show_completed');
+    expect(component.selectedFilter.filter({completed: true})).toEqual(true);
+  });
 
-      it('onClearCompleted should call clearCompleted', () => {
-        const {output, props} = setup();
-        const [, , footer] = output.props.children;
-        footer.props.onClearCompleted();
-        expect(props.actions.clearCompleted).toHaveBeenCalled();
-      });
-    });
+  it('shoud call completeTodo', function () {
+    spyOn(component.todoService, 'completeTodo').and.callThrough();
+    component.handleChange();
+    expect(component.todoService.completeTodo).toHaveBeenCalled();
+  });
 
-    describe('todo list', () => {
-      it('should render', () => {
-        const {output, props} = setup();
-        const [, list] = output.props.children;
-        expect(list.type).toBe('ul');
-        expect(list.props.children.length).toBe(2);
-        list.props.children.forEach((item, i) => { // eslint-disable-line max-nested-callbacks
-          expect(item.type).toBe(TodoItem);
-          expect(item.props.todo).toBe(props.todos[i]);
-        });
-      });
+  it('shoud call deleteTodo', function () {
+    spyOn(component.todoService, 'deleteTodo').and.callThrough();
+    component.handleSave({text: ''});
+    expect(component.todoService.deleteTodo).toHaveBeenCalled();
+  });
 
-      it('should filter items', () => {
-        const {output, renderer, props} = setup();
-        const [, , footer] = output.props.children;
-        footer.props.onShow(SHOW_COMPLETED);
-        const updated = renderer.getRenderOutput();
-        const [, updatedList] = updated.props.children;
-        expect(updatedList.props.children.length).toBe(1);
-        expect(updatedList.props.children[0].props.todo).toBe(props.todos[1]);
-      });
-    });
+  it('shoud call editTodo', function () {
+    spyOn(component.todoService, 'editTodo').and.callThrough();
+    component.handleSave({text: 'Hello'});
+    expect(component.todoService.editTodo).toHaveBeenCalled();
+  });
+
+  it('shoud call deleteTodo', function () {
+    spyOn(component.todoService, 'deleteTodo').and.callThrough();
+    component.handleDestroy();
+    expect(component.todoService.deleteTodo).toHaveBeenCalled();
   });
 });

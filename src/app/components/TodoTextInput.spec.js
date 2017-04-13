@@ -1,82 +1,88 @@
-import React from 'react';
-import TestUtils from 'react-addons-test-utils';
-import TodoTextInput from './TodoTextInput';
+var angular = require('angular');
+require('angular-mocks');
+var TodoTextInput = require('./TodoTextInput');
 
-function setup(propOverrides) {
-  const props = Object.assign({
-    onSave: jasmine.createSpy(),
-    text: 'Use Redux',
-    placeholder: 'What needs to be done?',
-    editing: false,
-    newTodo: false
-  }, propOverrides);
+describe('TodoTextInput component', function () {
+  function MockTodoService() {
+  }
 
-  const renderer = TestUtils.createRenderer();
-
-  renderer.render(
-    <TodoTextInput {...props}/>
-  );
-
-  let output = renderer.getRenderOutput();
-
-  output = renderer.getRenderOutput();
-
-  return {
-    props,
-    output,
-    renderer
-  };
-}
-
-describe('components', () => {
-  describe('TodoTextInput', () => {
-    it('should render correctly', () => {
-      const {output} = setup();
-      expect(output.props.placeholder).toEqual('What needs to be done?');
-      expect(output.props.value).toEqual('Use Redux');
-      expect(output.props.className).toEqual('');
-    });
-
-    it('should render correctly when editing=true', () => {
-      const {output} = setup({editing: true});
-      expect(output.props.className).toEqual('edit');
-    });
-
-    it('should render correctly when newTodo=true', () => {
-      const {output} = setup({newTodo: true});
-      expect(output.props.className).toEqual('new-todo');
-    });
-
-    it('should update value on change', () => {
-      const {output, renderer} = setup();
-      output.props.onChange({target: {value: 'Use Radox'}});
-      const updated = renderer.getRenderOutput();
-      expect(updated.props.value).toEqual('Use Radox');
-    });
-
-    it('should call onSave on return key press', () => {
-      const {output, props} = setup();
-      output.props.onKeyDown({which: 13, target: {value: 'Use Redux'}});
-      expect(props.onSave).toHaveBeenCalledWith('Use Redux');
-    });
-
-    it('should reset state on return key press if newTodo', () => {
-      const {output, renderer} = setup({newTodo: true});
-      output.props.onKeyDown({which: 13, target: {value: 'Use Redux'}});
-      const updated = renderer.getRenderOutput();
-      expect(updated.props.value).toEqual('');
-    });
-
-    it('should call onSave on blur', () => {
-      const {output, props} = setup();
-      output.props.onBlur({target: {value: 'Use Redux'}});
-      expect(props.onSave).toHaveBeenCalledWith('Use Redux');
-    });
-
-    it('shouldnt call onSave on blur if newTodo', () => {
-      const {output, props} = setup({newTodo: true});
-      output.props.onBlur({target: {value: 'Use Redux'}});
-      expect(props.onSave.calls.count()).toBe(0);
-    });
+  beforeEach(function () {
+    angular
+      .module('todoTextInput', ['app/components/TodoTextInput.html'])
+      .service('todoService', MockTodoService)
+      .component('todoTextInput', TodoTextInput);
+    angular.mock.module('todoTextInput');
   });
+
+  it('should render correctly', angular.mock.inject(function ($rootScope, $compile) {
+    var $scope = $rootScope.$new();
+    var element = $compile('<todo-text-input></todo-text-input>')($scope);
+    $scope.$digest();
+    var textInput = element.find('input');
+    expect(textInput.attr('type')).toEqual('text');
+  }));
+
+  it('should bind the text to the element', angular.mock.inject(function ($componentController) {
+    var bindings = {
+      text: 'Hello'
+    };
+    var component = $componentController('todoTextInput', {}, bindings);
+    expect(component.text).toEqual('Hello');
+  }));
+
+  it('should call focus on element construction', angular.mock.inject(function ($componentController) {
+    var focusSpy = jasmine.createSpy('focusSpy');
+    var bindings = {
+      text: 'Hello',
+      focus: focusSpy
+    };
+    var component = $componentController('todoTextInput', {}, bindings);
+    expect(component.focus).toHaveBeenCalled();
+  }));
+
+  it('should not call focus on element construction', angular.mock.inject(function ($componentController) {
+    var focusSpy = jasmine.createSpy('focusSpy');
+    var bindings = {
+      focus: focusSpy
+    };
+    var component = $componentController('todoTextInput', {}, bindings);
+    expect(component.focus).not.toHaveBeenCalled();
+  }));
+
+  it('should call onSave', angular.mock.inject(function ($componentController) {
+    var bindings = {
+      onSave: function () {},
+      newTodo: false,
+      text: 'Hello'
+    };
+    var component = $componentController('todoTextInput', {}, bindings);
+    spyOn(component, 'onSave').and.callThrough();
+    component.handleBlur();
+    expect(component.onSave).toHaveBeenCalled();
+  }));
+
+  it('should not call onSave', angular.mock.inject(function ($componentController) {
+    var bindings = {
+      onSave: function () {},
+      newTodo: true,
+      text: 'Hello'
+    };
+    var component = $componentController('todoTextInput', {}, bindings);
+    spyOn(component, 'onSave').and.callThrough();
+    component.handleBlur();
+    expect(component.onSave).not.toHaveBeenCalled();
+  }));
+
+  it('should call onSave and clear text', angular.mock.inject(function ($componentController) {
+    var bindings = {
+      onSave: function () {},
+      newTodo: true,
+      text: 'Hello'
+    };
+    var component = $componentController('todoTextInput', {}, bindings);
+    spyOn(component, 'onSave').and.callThrough();
+    component.handleSubmit({keyCode: 13});
+    expect(component.onSave).toHaveBeenCalled();
+    expect(component.text).toEqual('');
+  }));
 });
